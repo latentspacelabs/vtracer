@@ -140,7 +140,7 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
     );
 
     let mut clusters = runner.run();
-
+    
     match config.hierarchical {
         Hierarchical::Stacked => {}
         Hierarchical::Cutout => {
@@ -149,7 +149,7 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
             let runner = Runner::new(
                 RunnerConfig {
                     diagonal: false,
-                    hierarchical: 64,
+                    hierarchical: 10,
                     batch_size: 25600,
                     good_min_area: 0,
                     good_max_area: (image.width * image.height) as usize,
@@ -168,12 +168,15 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
 
     let view = clusters.view();
 
+    println!("{}", view.clusters_output.len());
+    println!("{}", clusters.output_len());
+
     let mut svg = SvgFile::new(width, height, config.path_precision);
     for &cluster_index in view.clusters_output.iter().rev() {
         let cluster = view.get_cluster(cluster_index);
         let paths = if matches!(config.mode, PathSimplifyMode::Spline)
-            && cluster.rect.width() < SMALL_CIRCLE
-            && cluster.rect.height() < SMALL_CIRCLE
+            // && cluster.rect.width() < SMALL_CIRCLE
+            // && cluster.rect.height() < SMALL_CIRCLE
             && cluster.to_shape(&view).is_circle()
         {
             let mut paths = CompoundPath::new();

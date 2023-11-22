@@ -10,6 +10,7 @@ pub enum Preset {
 pub enum ColorMode {
     Color,
     Binary,
+    Seg,
 }
 
 pub enum Hierarchical {
@@ -70,6 +71,7 @@ impl FromStr for ColorMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "color" => Ok(Self::Color),
+            "seg" => Ok(Self::Seg),
             "binary" => Ok(Self::Binary),
             _ => Err(format!("unknown ColorMode {}", s)),
         }

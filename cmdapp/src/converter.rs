@@ -6,7 +6,7 @@ use super::svg::SvgFile;
 use fastrand::Rng;
 use visioncortex::color_clusters::{KeyingAction, Runner, RunnerConfig, HIERARCHICAL_MAX};
 use visioncortex::{
-    approximate_circle_with_spline, Color, ColorImage, ColorName, CompoundPath, PathSimplifyMode,
+    approximate_circle_with_spline, Color, ColorImage, ColorName, CompoundPath, PathSimplifyMode, SegImage
 };
 
 const NUM_UNUSED_COLOR_ITERATIONS: usize = 6;
@@ -16,12 +16,23 @@ const KEYING_THRESHOLD: f32 = 0.2;
 
 const SMALL_CIRCLE: i32 = 12;
 
+
 /// Convert an in-memory image into an in-memory SVG
-pub fn convert(img: ColorImage, config: Config) -> Result<SvgFile, String> {
+pub fn convert(input_path: &Path, config: Config) -> Result<SvgFile, String> {
     let config = config.into_converter_config();
     match config.color_mode {
-        ColorMode::Color => color_image_to_svg(img, config),
-        ColorMode::Binary => binary_image_to_svg(img, config),
+        ColorMode::Color => {
+            let img = read_color_image(input_path);
+            color_image_to_svg(img?, config)
+        }
+        ColorMode::Binary => {
+            let img = read_color_image(input_path);
+            binary_image_to_svg(img?, config)
+        }
+        ColorMode::Seg => {
+            let img = read_seg_image(input_path);
+            seg_image_to_svg(img?, config)
+        }
     }
 }
 
@@ -31,8 +42,9 @@ pub fn convert_image_to_svg(
     output_path: &Path,
     config: Config,
 ) -> Result<(), String> {
-    let img = read_image(input_path)?;
-    let svg = convert(img, config)?;
+    // let img = read_image(input_path)?;
+
+    let svg = convert(input_path, config)?;
     write_svg(svg, output_path)
 }
 
@@ -149,7 +161,7 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
             let runner = Runner::new(
                 RunnerConfig {
                     diagonal: false,
-                    hierarchical: 10,
+                    hierarchical: 64,
                     batch_size: 25600,
                     good_min_area: 0,
                     good_max_area: (image.width * image.height) as usize,
@@ -227,7 +239,32 @@ fn binary_image_to_svg(img: ColorImage, config: ConverterConfig) -> Result<SvgFi
     Ok(svg)
 }
 
-fn read_image(input_path: &Path) -> Result<ColorImage, String> {
+fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, String> {
+    let width = img.width;
+    let height = img.height;
+
+    // Use a HashSet to get unique values
+
+    let clusters = img.to_clusters();
+    let mut svg = SvgFile::new(width, height, config.path_precision);
+    for i in 0..clusters.len() {
+        let cluster = clusters.get_cluster(i);
+        if cluster.size() >= config.filter_speckle_area {
+            let paths = cluster.to_compound_path(
+                config.mode,
+                config.corner_threshold,
+                config.length_threshold,
+                config.max_iterations,
+                config.splice_threshold,
+            );
+            svg.add_path(paths, Color::color(&ColorName::Black));
+        }
+    }
+
+    Ok(svg)
+}
+
+fn read_color_image(input_path: &Path) -> Result<ColorImage, String> {
     let img = image::open(input_path);
     let img = match img {
         Ok(file) => file.to_rgba8(),
@@ -243,6 +280,20 @@ fn read_image(input_path: &Path) -> Result<ColorImage, String> {
 
     Ok(img)
 }
+
+fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
+    let img = image::open(input_path);
+    let img = match img {
+        Ok(file) => file.to_luma8(),
+        Err(_) => return Err(String::from("No image file found at specified input path")),
+    };
+
+    let (width, height) = (img.width() as usize, img.height() as usize);
+    let img = SegImage::new_pixels(img.as_raw().to_vec(), width, height);
+
+    Ok(img)
+}
+
 
 fn write_svg(svg: SvgFile, output_path: &Path) -> Result<(), String> {
     let out_file = File::create(output_path);

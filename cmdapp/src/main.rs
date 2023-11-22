@@ -143,12 +143,7 @@ pub fn config_from_args() -> (PathBuf, PathBuf, Config) {
     }
 
     if let Some(value) = matches.value_of("color_mode") {
-        config.color_mode = ColorMode::from_str(if value.trim() == "bw" || value.trim() == "BW" {
-            "binary"
-        } else {
-            "color"
-        })
-        .unwrap()
+        config.color_mode = ColorMode::from_str(value).unwrap()
     }
 
     if let Some(value) = matches.value_of("hierarchical") {

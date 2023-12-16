@@ -4,9 +4,10 @@ use std::{fs::File, io::Write};
 use super::config::{ColorMode, Config, ConverterConfig, Hierarchical};
 use super::svg::SvgFile;
 use fastrand::Rng;
+use opencv::prelude::*;
 use visioncortex::color_clusters::{KeyingAction, Runner, RunnerConfig, HIERARCHICAL_MAX};
 use visioncortex::{
-    approximate_circle_with_spline, Color, ColorImage, ColorName, CompoundPath, PathSimplifyMode, SegImage
+    approximate_circle_with_spline, Color, ColorImage, ColorName, CompoundPath, PathSimplifyMode, SegImage, PointF64
 };
 
 const NUM_UNUSED_COLOR_ITERATIONS: usize = 6;
@@ -249,6 +250,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
     let mut svg = SvgFile::new(width, height, config.path_precision);
     for i in 0..clusters.len() {
         let cluster = clusters.get_cluster(i);
+        println!("cluster size {}", cluster.size());
         if cluster.size() >= config.filter_speckle_area {
             let paths = cluster.to_compound_path(
                 config.mode,
@@ -257,6 +259,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
                 config.max_iterations,
                 config.splice_threshold,
             );
+            let (string, offset) = paths.to_svg_string(true, PointF64 { x: 0.0, y: 0.0 }, None);
             svg.add_path(paths, Color::color(&ColorName::Black));
         }
     }
@@ -282,16 +285,37 @@ fn read_color_image(input_path: &Path) -> Result<ColorImage, String> {
 }
 
 fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
-    let img = image::open(input_path);
-    let img = match img {
-        Ok(file) => file.to_luma8(),
-        Err(_) => return Err(String::from("No image file found at specified input path")),
-    };
+    if let Some(path_str) = input_path.to_str() {
+        let img = opencv::imgcodecs::imread(path_str, opencv::imgcodecs::IMREAD_GRAYSCALE);
 
-    let (width, height) = (img.width() as usize, img.height() as usize);
-    let img = SegImage::new_pixels(img.as_raw().to_vec(), width, height);
+        let mat = match img {
+            Ok(mat) => mat,
+            Err(_) => return Err(String::from("No image file found at specified input path")),
+        };
 
-    Ok(img)
+        let vec: Vec<u8> = match mat.to_vec_2d() {
+            Ok(vec) => vec.concat(),
+            Err(_) => return Err(String::from("No image file found at specified input path")),
+        };
+        
+        // let sum: u64 = vec.iter().map(|&x| x as u64).sum();
+
+        // // Print the sum
+        // println!("Sum: {}", sum);
+
+
+        // if let Ok(s) = std::str::from_utf8(&vec) {
+        //     println!("{}", s);
+        // } else {
+        //     println!("Invalid UTF-8 data");
+        // }
+
+        println!("Length: {}", vec.len());
+    
+        return Ok(SegImage::new_pixels(vec, mat.cols() as usize, mat.rows() as usize));
+    } else {
+        return Err(String::from("No image file found at specified input path"));
+    }
 }
 
 

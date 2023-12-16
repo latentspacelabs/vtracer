@@ -16,6 +16,7 @@ image = "0.23.10"
 visioncortex = { path = "/home/evan/dev/visioncortex" }
 fastrand = "1.8"
 pyo3 = { version = "0.19.0", optional = true }
+opencv = "0.86.1"
 
 [features]
 python-binding = ["pyo3"]

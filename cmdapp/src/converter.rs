@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::{fs::File, io::Write};
+use std::time::Instant;
 
 use super::config::{ColorMode, Config, ConverterConfig, Hierarchical};
 use super::svg::SvgFile;
@@ -23,16 +24,20 @@ pub fn convert(input_path: &Path, config: Config) -> Result<SvgFile, String> {
     let config = config.into_converter_config();
     match config.color_mode {
         ColorMode::Color => {
+            println!("COLOR MODE");
             let img = read_color_image(input_path);
             color_image_to_svg(img?, config)
         }
         ColorMode::Binary => {
+            println!("BINARY MODE");
             let img = read_color_image(input_path);
             binary_image_to_svg(img?, config)
         }
         ColorMode::Seg => {
+            println!("SEG MODE");
             let img = read_seg_image(input_path);
-            seg_image_to_svg(img?, config)
+            let svg = seg_image_to_svg(img?, config);
+            return svg;
         }
     }
 }
@@ -181,8 +186,8 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
 
     let view = clusters.view();
 
-    println!("{}", view.clusters_output.len());
-    println!("{}", clusters.output_len());
+    // println!("{}", view.clusters_output.len());
+    // println!("{}", clusters.output_len());
 
     let mut svg = SvgFile::new(width, height, config.path_precision);
     for &cluster_index in view.clusters_output.iter().rev() {
@@ -259,7 +264,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
                 config.max_iterations,
                 config.splice_threshold,
             );
-            let (string, offset) = paths.to_svg_string(true, PointF64 { x: 0.0, y: 0.0 }, None);
+            // let (string, offset) = paths.to_svg_string(true, PointF64 { x: 0.0, y: 0.0 }, None);
             svg.add_path(paths, Color::color(&ColorName::Black));
         }
     }

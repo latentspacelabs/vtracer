@@ -25,10 +25,9 @@ fn convert_image_to_svg_py(
 
     // TODO: enforce color mode with an enum so that we only
     // accept the strings 'color' or 'binary'
-    let color_mode = match colormode.unwrap_or("color") {
-        "color" => ColorMode::Color,
-        "binary" => ColorMode::Binary,
-        _ => ColorMode::Color,
+    let color_mode = match colormode.unwrap_or("seg") {
+        "seg" => ColorMode::Seg,
+        _ => ColorMode::Seg,
     };
 
     let hierarchical = match hierarchical.unwrap_or("stacked") {

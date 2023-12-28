@@ -51,6 +51,7 @@ fn convert_image_to_svg_py(
     let length_threshold = length_threshold.unwrap_or(4.0);
     let splice_threshold = splice_threshold.unwrap_or(45);
     let max_iterations = max_iterations.unwrap_or(10);
+    let max_error_simp = max_error_simp.unwrap_or(10.0);
 
     let config = Config {
         color_mode,

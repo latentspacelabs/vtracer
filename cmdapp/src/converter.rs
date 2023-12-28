@@ -212,6 +212,7 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
                 config.length_threshold,
                 config.max_iterations,
                 config.splice_threshold,
+                config.max_error_simp,
             )
         };
         svg.add_path(paths, cluster.residue_color());
@@ -237,6 +238,7 @@ fn binary_image_to_svg(img: ColorImage, config: ConverterConfig) -> Result<SvgFi
                 config.length_threshold,
                 config.max_iterations,
                 config.splice_threshold,
+                config.max_error_simp,
             );
             svg.add_path(paths, Color::color(&ColorName::Black));
         }
@@ -263,6 +265,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
                 config.length_threshold,
                 config.max_iterations,
                 config.splice_threshold,
+                config.max_error_simp,
             );
             // let (string, offset) = paths.to_svg_string(true, PointF64 { x: 0.0, y: 0.0 }, None);
             svg.add_path(paths, Color::color(&ColorName::Black));

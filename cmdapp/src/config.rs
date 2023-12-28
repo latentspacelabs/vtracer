@@ -31,6 +31,7 @@ pub struct Config {
     pub max_iterations: usize,
     pub splice_threshold: i32,
     pub path_precision: Option<u32>,
+    pub max_error_simp: f64,
 }
 
 pub(crate) struct ConverterConfig {
@@ -45,6 +46,7 @@ pub(crate) struct ConverterConfig {
     pub max_iterations: usize,
     pub splice_threshold: f64,
     pub path_precision: Option<u32>,
+    pub max_error_simp: f64,
 }
 
 impl Default for Config {
@@ -61,6 +63,7 @@ impl Default for Config {
             splice_threshold: 45,
             max_iterations: 10,
             path_precision: Some(2),
+            max_error_simp: 10.0,
         }
     }
 }
@@ -118,6 +121,7 @@ impl Config {
                 max_iterations: 10,
                 splice_threshold: 45,
                 path_precision: Some(2),
+                max_error_simp: 10.0,
             },
             Preset::Poster => Self {
                 color_mode: ColorMode::Color,
@@ -131,6 +135,7 @@ impl Config {
                 max_iterations: 10,
                 splice_threshold: 45,
                 path_precision: Some(2),
+                max_error_simp: 10.0,
             },
             Preset::Photo => Self {
                 color_mode: ColorMode::Color,
@@ -144,6 +149,7 @@ impl Config {
                 max_iterations: 10,
                 splice_threshold: 45,
                 path_precision: Some(2),
+                max_error_simp: 10.0,
             },
         }
     }
@@ -161,6 +167,7 @@ impl Config {
             max_iterations: self.max_iterations,
             splice_threshold: deg2rad(self.splice_threshold),
             path_precision: self.path_precision,
+            max_error_simp: self.max_error_simp,
         }
     }
 }

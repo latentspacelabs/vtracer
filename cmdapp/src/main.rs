@@ -124,6 +124,13 @@ pub fn config_from_args() -> (PathBuf, PathBuf, Config) {
             .help("Number of decimal places to use in path string"),
     );
 
+    let app = app.arg(
+        Arg::with_name("max_error_simplification")
+            .long("max_error_simplification")
+            .takes_value(true)
+            .help("Maximum error allowed in path simplification"),
+    );
+
     // Extract matches
     let matches = app.get_matches();
 
@@ -255,6 +262,19 @@ pub fn config_from_args() -> (PathBuf, PathBuf, Config) {
         } else {
             panic!(
                 "Parser Error: Path precision is not an unsigned integer: {}.",
+                value
+            );
+        }
+    }
+
+    if let Some(value) = matches.value_of("max_error_simplification") {
+        if value.trim().parse::<f64>().is_ok() {
+            // is numeric
+            let value = value.trim().parse::<f64>().unwrap();
+            config.max_error_simp = value;
+        } else {
+            panic!(
+                "Parser Error: Max error simplication is not numeric: {}.",
                 value
             );
         }

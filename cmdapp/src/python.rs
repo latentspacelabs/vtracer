@@ -19,6 +19,7 @@ fn convert_image_to_svg_py(
     max_iterations: Option<usize>, // default: 10
     splice_threshold: Option<i32>, // default: 45
     path_precision: Option<u32>,   // default: 8
+    max_error_simp: Option<f64>,   // default: 10.0
 ) -> PyResult<()> {
     let input_path = PathBuf::from(image_path);
     let output_path = PathBuf::from(out_path);
@@ -63,6 +64,7 @@ fn convert_image_to_svg_py(
         max_iterations,
         splice_threshold,
         path_precision,
+        max_error_simp,
         ..Default::default()
     };
 

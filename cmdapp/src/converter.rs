@@ -24,17 +24,17 @@ pub fn convert(input_path: &Path, config: Config) -> Result<SvgFile, String> {
     let config = config.into_converter_config();
     match config.color_mode {
         ColorMode::Color => {
-            println!("COLOR MODE");
+            // println!("COLOR MODE");
             let img = read_color_image(input_path);
             color_image_to_svg(img?, config)
         }
         ColorMode::Binary => {
-            println!("BINARY MODE");
+            // println!("BINARY MODE");
             let img = read_color_image(input_path);
             binary_image_to_svg(img?, config)
         }
         ColorMode::Seg => {
-            println!("SEG MODE");
+            // println!("SEG MODE");
             let img = read_seg_image(input_path);
             let svg = seg_image_to_svg(img?, config);
             return svg;
@@ -257,7 +257,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
     let mut svg = SvgFile::new(width, height, config.path_precision);
     for i in 0..clusters.len() {
         let cluster = clusters.get_cluster(i);
-        println!("cluster size {}", cluster.size());
+        // println!("cluster size {}", cluster.size());
         if cluster.size() >= config.filter_speckle_area {
             let paths = cluster.to_compound_path(
                 config.mode,
@@ -318,7 +318,7 @@ fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
         //     println!("Invalid UTF-8 data");
         // }
 
-        println!("Length: {}", vec.len());
+        // println!("Length: {}", vec.len());
     
         return Ok(SegImage::new_pixels(vec, mat.cols() as usize, mat.rows() as usize));
     } else {

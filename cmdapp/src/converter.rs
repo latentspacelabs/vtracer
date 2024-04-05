@@ -5,7 +5,11 @@ use std::time::Instant;
 use super::config::{ColorMode, Config, ConverterConfig, Hierarchical};
 use super::svg::SvgFile;
 use fastrand::Rng;
-use opencv::prelude::*;
+use opencv::{
+    core::{Mat, self},
+    imgproc,
+    prelude::*,
+};
 use visioncortex::color_clusters::{KeyingAction, Runner, RunnerConfig, HIERARCHICAL_MAX};
 use visioncortex::{
     approximate_circle_with_spline, Color, ColorImage, ColorName, CompoundPath, PathSimplifyMode, SegImage, PointF64
@@ -210,7 +214,7 @@ fn color_image_to_svg(mut img: ColorImage, config: ConverterConfig) -> Result<Sv
                 config.mode,
                 config.corner_threshold,
                 config.length_threshold,
-                config.max_iterations,
+            config.max_iterations,
                 config.splice_threshold,
                 config.max_error_simp,
             )
@@ -293,37 +297,36 @@ fn read_color_image(input_path: &Path) -> Result<ColorImage, String> {
 }
 
 fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
-    if let Some(path_str) = input_path.to_str() {
-        let img = opencv::imgcodecs::imread(path_str, opencv::imgcodecs::IMREAD_GRAYSCALE);
+    let img = image::open(input_path);
+    let img = match img {
+        Ok(file) => file.to_rgba8(),
+        Err(_) => return Err(String::from("No image file found at specified input path")),
+    };
 
-        let mat = match img {
-            Ok(mat) => mat,
-            Err(_) => return Err(String::from("No image file found at specified input path")),
-        };
+    let (width, height) = img.dimensions();
 
-        let vec: Vec<u8> = match mat.to_vec_2d() {
-            Ok(vec) => vec.concat(),
-            Err(_) => return Err(String::from("No image file found at specified input path")),
-        };
-        
-        // let sum: u64 = vec.iter().map(|&x| x as u64).sum();
-
-        // // Print the sum
-        // println!("Sum: {}", sum);
+    let mut combined_pixels: Vec<u32> = Vec::with_capacity((width * height) as usize);
 
 
-        // if let Ok(s) = std::str::from_utf8(&vec) {
-        //     println!("{}", s);
-        // } else {
-        //     println!("Invalid UTF-8 data");
-        // }
+    // Iterate over the pixels of the original RGBA image
+    for (x, y, pixel) in img.enumerate_pixels() {
+        let image::Rgba(data) = pixel;
 
-        // println!("Length: {}", vec.len());
-    
-        return Ok(SegImage::new_pixels(vec, mat.cols() as usize, mat.rows() as usize));
-    } else {
-        return Err(String::from("No image file found at specified input path"));
+        // Extract the individual channel values
+        let red = data[0] as u32;
+        let green = data[1] as u32;
+        let blue = data[2] as u32;
+        let alpha = data[3] as u32;
+
+        // Combine the channel values into a single u32
+        let combined_pixel = (red << 24) | (green << 16) | (blue << 8) | alpha;
+
+        // Add the combined pixel to the vector
+        combined_pixels.push(combined_pixel);
     }
+
+    
+    return Ok(SegImage::new_pixels(combined_pixels, width as usize, height as usize));
 }
 
 

@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::{fs::File, io::Write};
-use std::time::Instant;
+use image::{DynamicImage, GenericImageView};
 
 use super::config::{ColorMode, Config, ConverterConfig, Hierarchical};
 use super::svg::SvgFile;
@@ -299,7 +299,7 @@ fn read_color_image(input_path: &Path) -> Result<ColorImage, String> {
 fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
     let img = image::open(input_path);
     let img = match img {
-        Ok(file) => file.to_rgba8(),
+        Ok(file) => file,
         Err(_) => return Err(String::from("No image file found at specified input path")),
     };
 
@@ -307,24 +307,32 @@ fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
 
     let mut combined_pixels: Vec<u32> = Vec::with_capacity((width * height) as usize);
 
-
-    // Iterate over the pixels of the original RGBA image
-    for (x, y, pixel) in img.enumerate_pixels() {
-        let image::Rgba(data) = pixel;
-
-        // Extract the individual channel values
-        let red = data[0] as u32;
-        let green = data[1] as u32;
-        let blue = data[2] as u32;
-        let alpha = data[3] as u32;
-
-        // Combine the channel values into a single u32
-        let combined_pixel = (red << 24) | (green << 16) | (blue << 8) | alpha;
-
-        // Add the combined pixel to the vector
-        combined_pixels.push(combined_pixel);
+    // Iterate over the pixels of the
+    match img {
+        DynamicImage::ImageRgba8(rgba_img) => {
+            // Iterate over the pixels of the RGBA image
+            for (_, _, pixel) in rgba_img.enumerate_pixels() {
+                let image::Rgba(data) = pixel;
+                let red = data[0] as u32;
+                let green = data[1] as u32;
+                let blue = data[2] as u32;
+                let alpha = data[3] as u32;
+                
+                let combined_pixel = (red << 24) | (green << 16) | (blue << 8) | alpha;
+                combined_pixels.push(combined_pixel);
+            }
+        },
+        DynamicImage::ImageLuma8(grayscale_img) => {
+            // Iterate over the pixels of the grayscale image
+            for (_, _, pixel) in grayscale_img.enumerate_pixels() {
+                let gray_value = pixel[0] as u32;
+                // For grayscale, use the gray value for all channels and set alpha to 255 (fully opaque)
+                let combined_pixel = gray_value;
+                combined_pixels.push(combined_pixel);
+            }
+        },
+        _ => return Err(String::from("Unsupported image format")),
     }
-
     
     return Ok(SegImage::new_pixels(combined_pixels, width as usize, height as usize));
 }

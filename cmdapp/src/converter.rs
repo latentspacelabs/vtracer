@@ -255,6 +255,7 @@ fn seg_image_to_svg(img: SegImage, config: ConverterConfig) -> Result<SvgFile, S
     let width = img.width;
     let height = img.height;
 
+   
     // Use a HashSet to get unique values
 
     let clusters = img.to_clusters();
@@ -305,7 +306,7 @@ fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
 
     let (width, height) = img.dimensions();
 
-    let mut combined_pixels: Vec<u32> = Vec::with_capacity((width * height) as usize);
+    let mut combined_pixels: Vec<i32> = Vec::with_capacity((width * height) as usize);
 
     // Iterate over the pixels of the
     match img {
@@ -313,20 +314,25 @@ fn read_seg_image(input_path: &Path) -> Result<SegImage, String> {
             // Iterate over the pixels of the RGBA image
             for (_, _, pixel) in rgba_img.enumerate_pixels() {
                 let image::Rgba(data) = pixel;
-                let red = data[0] as u32;
-                let green = data[1] as u32;
-                let blue = data[2] as u32;
-                let alpha = data[3] as u32;
+                let red = data[0] as i32;
+                let green = data[1] as i32;
+                let blue = data[2] as i32;
+                let alpha = data[3] as i32;
                 
-                let combined_pixel = (red << 24) | (green << 16) | (blue << 8) | alpha;
+                // handle padding
+                // we will never have this many segs so it's safe to use this value as padding
+                let combined_pixel = if red == 255 && green == 255 && blue == 255 && alpha == 255 {
+                    -100
+                } else {
+                    ((red << 24) | (green << 16) | (blue << 8) | alpha) as i32
+                };
                 combined_pixels.push(combined_pixel);
             }
         },
         DynamicImage::ImageLuma8(grayscale_img) => {
             // Iterate over the pixels of the grayscale image
             for (_, _, pixel) in grayscale_img.enumerate_pixels() {
-                let gray_value = pixel[0] as u32;
-                // For grayscale, use the gray value for all channels and set alpha to 255 (fully opaque)
+                let gray_value = pixel[0] as i32;
                 let combined_pixel = gray_value;
                 combined_pixels.push(combined_pixel);
             }
